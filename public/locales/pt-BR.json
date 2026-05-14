@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "title": "Contratos de Parceria",
+    "description": "Fluxo de assinatura de documentos para contratos de parceria"
+  },
+  "common": {
+    "preparingSession": "A preparar a sua sessão..."
+  },
+  "home": {
+    "title": "Contratos de Parceria",
+    "description": "Abra esta aplicação através de uma ligação do documento a partir da aplicação móvel ou do fluxo de autenticação.",
+    "routeLabel": "Rota esperada:"
+  },
+  "document": {
+    "signedTitle": "Documento assinado com sucesso",
+    "signedDescription": "O seu acordo foi registado no serviço legal.",
+    "declinedTitle": "Documento recusado",
+    "declinedDescription": "A sua decisão foi registada no serviço legal.",
+    "loading": "A carregar documento...",
+    "loadError": "Não foi possível carregar o documento.",
+    "loadErrorWithStatus": "Não foi possível carregar o documento. HTTP {{status}}",
+    "saveError": "Não foi possível guardar a decisão.",
+    "saveErrorWithStatus": "Não foi possível guardar a decisão. HTTP {{status}}",
+    "meta": "Código: {{code}} | Versão: {{version}}",
+    "accept": "Aceitar",
+    "decline": "Recusar"
+  }
+}

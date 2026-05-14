@@ -1,0 +1,16 @@
+name: Lint
+
+on:
+  pull_request:
+    types: [ opened, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  prettier-check:
+    name: Prettier check
+    uses: ./.github/workflows/prettier.yml
+    if: success()

@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "title": "Partnership Contracts",
+    "description": "Document signing flow for partnership contracts"
+  },
+  "common": {
+    "preparingSession": "Preparing your session..."
+  },
+  "home": {
+    "title": "Partnership Contracts",
+    "description": "Open this application through a document link from the mobile app or auth flow.",
+    "routeLabel": "Expected route:"
+  },
+  "document": {
+    "signedTitle": "Document signed successfully",
+    "signedDescription": "Your agreement has been recorded in the legal service.",
+    "declinedTitle": "Document declined",
+    "declinedDescription": "Your decision has been recorded in the legal service.",
+    "loading": "Loading document...",
+    "loadError": "Unable to load document.",
+    "loadErrorWithStatus": "Unable to load document. HTTP {{status}}",
+    "saveError": "Unable to save decision.",
+    "saveErrorWithStatus": "Unable to save decision. HTTP {{status}}",
+    "meta": "Code: {{code}} | Version: {{version}}",
+    "accept": "Accept",
+    "decline": "Decline"
+  }
+}
