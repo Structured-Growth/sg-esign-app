@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
   }
 
   if (!legalApiUrl) {
-    return NextResponse.json({ error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." },
+      { status: 500 }
+    );
   }
 
   try {
@@ -22,7 +25,7 @@ export async function POST(request: NextRequest) {
     const normalizedBody = {
       ...body,
       accountId: user.id,
-      userId: user.primaryUserId
+      userId: user.primaryUserId,
     };
 
     const response = await fetch(`${legalApiUrl}/agreements`, {
@@ -30,10 +33,10 @@ export async function POST(request: NextRequest) {
       headers: {
         Authorization: `Bearer ${serviceAccessToken}`,
         "Content-Type": "application/json",
-        ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {})
+        ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {}),
       },
       body: JSON.stringify(normalizedBody),
-      cache: "no-store"
+      cache: "no-store",
     });
 
     const data = await response.json().catch(() => null);
@@ -47,12 +50,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, {
       headers: {
-        "Cache-Control": "no-store"
-      }
+        "Cache-Control": "no-store",
+      },
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to create agreement." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to create agreement.",
+      },
       { status: 500 }
     );
   }

@@ -13,9 +13,16 @@ function LoaderScreen() {
   const { t } = useTranslation();
 
   return (
-    <Stack minHeight="100vh" alignItems="center" justifyContent="center" spacing={2}>
+    <Stack
+      minHeight="100vh"
+      alignItems="center"
+      justifyContent="center"
+      spacing={2}
+    >
       <CircularProgress />
-      <Typography color="text.secondary">{t("common.preparingSession")}</Typography>
+      <Typography color="text.secondary">
+        {t("common.preparingSession")}
+      </Typography>
     </Stack>
   );
 }
@@ -23,15 +30,20 @@ function LoaderScreen() {
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
-  const [externalToken, setExternalToken] = useState<string | null | undefined>(undefined);
-  const [isProcessingExternalToken, setIsProcessingExternalToken] = useState(false);
+  const [externalToken, setExternalToken] = useState<string | null | undefined>(
+    undefined
+  );
+  const [isProcessingExternalToken, setIsProcessingExternalToken] =
+    useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const tokenFromQuery = new URLSearchParams(window.location.search).get("token");
+    const tokenFromQuery = new URLSearchParams(window.location.search).get(
+      "token"
+    );
     setExternalToken(tokenFromQuery);
   }, []);
 
@@ -41,7 +53,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return {
-      ...(session.user as AuthUserInterface)
+      ...(session.user as AuthUserInterface),
     };
   }, [session?.user]);
 
@@ -52,7 +64,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.error]);
 
   useEffect(() => {
-    if (externalToken === undefined || !externalToken || status === "authenticated" || isProcessingExternalToken) {
+    if (
+      externalToken === undefined ||
+      !externalToken ||
+      status === "authenticated" ||
+      isProcessingExternalToken
+    ) {
       return;
     }
 
@@ -60,7 +77,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setAuthStatus({
         isAuthenticating: true,
         isReady: false,
-        error: null
+        error: null,
       })
     );
 
@@ -68,7 +85,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
     signIn("external-token", {
       token: externalToken,
-      redirect: false
+      redirect: false,
     })
       .then((result) => {
         if (result?.error) {
@@ -86,7 +103,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
           setAuthStatus({
             error: signInError.message,
             isAuthenticating: false,
-            isReady: false
+            isReady: false,
           })
         );
         setExternalToken(null);
@@ -104,7 +121,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (status === "authenticated" && sessionUser) {
       dispatch(
         setAuthSession({
-          user: sessionUser
+          user: sessionUser,
         })
       );
       return;
@@ -115,7 +132,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setAuthStatus({
           isAuthenticating: true,
           isReady: false,
-          error: null
+          error: null,
         })
       );
       return;
@@ -126,7 +143,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setAuthStatus({
           isAuthenticating: true,
           isReady: false,
-          error: null
+          error: null,
         })
       );
       signIn("oauth");
@@ -138,13 +155,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         setAuthStatus({
           isAuthenticating: true,
           isReady: false,
-          error: null
+          error: null,
         })
       );
     }
   }, [dispatch, externalToken, isProcessingExternalToken, sessionUser, status]);
 
-  if (status === "loading" || externalToken === undefined || isProcessingExternalToken) {
+  if (
+    status === "loading" ||
+    externalToken === undefined ||
+    isProcessingExternalToken
+  ) {
     return <LoaderScreen />;
   }
 

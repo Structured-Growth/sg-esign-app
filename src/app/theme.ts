@@ -13,19 +13,19 @@ const theme = createTheme({
       "Inter",
       "-apple-system",
       "BlinkMacSystemFont",
-      "\"Segoe UI\"",
+      '"Segoe UI"',
       "Arial",
-      "sans-serif"
-    ].join(", ")
+      "sans-serif",
+    ].join(", "),
   },
   shape: {
-    borderRadius: 8
+    borderRadius: 8,
   },
   palette: {
     background: {
-      default: "#f4f6f8"
-    }
-  }
+      default: "#f4f6f8",
+    },
+  },
 });
 
 export default theme;

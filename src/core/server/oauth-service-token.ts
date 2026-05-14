@@ -46,19 +46,22 @@ async function requestServiceAccessToken() {
   const body = new URLSearchParams({
     grant_type: "client_credentials",
     client_id: clientId,
-    client_secret: clientSecret
+    client_secret: clientSecret,
   });
 
   const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
+      "Content-Type": "application/x-www-form-urlencoded",
     },
     body: body.toString(),
-    cache: "no-store"
+    cache: "no-store",
   });
 
-  const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  const payload = (await response.json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
 
   if (!response.ok || !payload) {
     throw new Error(
@@ -71,12 +74,14 @@ async function requestServiceAccessToken() {
   const accessToken = payload.access_token ?? payload.accessToken;
 
   if (typeof accessToken !== "string" || !accessToken) {
-    throw new Error("OAuth service token response does not contain access token.");
+    throw new Error(
+      "OAuth service token response does not contain access token."
+    );
   }
 
   serviceTokenCache = {
     accessToken,
-    expiresAt: readTokenExpiry(payload)
+    expiresAt: readTokenExpiry(payload),
   };
 
   return serviceTokenCache.accessToken;

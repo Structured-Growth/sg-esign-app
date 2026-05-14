@@ -5,7 +5,7 @@ import {
   AgreementInterface,
   CheckAgreementParamsInterface,
   CheckAgreementResponseInterface,
-  CreateAgreementRequestInterface
+  CreateAgreementRequestInterface,
 } from "@/core/interfaces/legal.interface";
 
 export const legalApi = createApi({
@@ -13,32 +13,50 @@ export const legalApi = createApi({
   baseQuery: legalQuery,
   tagTypes: ["AgreementCheck"],
   endpoints: (builder) => ({
-    checkAgreement: builder.query<CheckAgreementResponseInterface, CheckAgreementParamsInterface>({
+    checkAgreement: builder.query<
+      CheckAgreementResponseInterface,
+      CheckAgreementParamsInterface
+    >({
       query: ({ documentCode }) => ({
         url: "/agreements/check",
         params: {
-          documentCode
-        }
+          documentCode,
+        },
       }),
-      providesTags: (_result, _error, args) => [{ type: "AgreementCheck", id: `${args.accountId}:${args.documentCode}` }]
+      providesTags: (_result, _error, args) => [
+        {
+          type: "AgreementCheck",
+          id: `${args.accountId}:${args.documentCode}`,
+        },
+      ],
     }),
-    createAgreement: builder.mutation<AgreementInterface, CreateAgreementRequestInterface>({
+    createAgreement: builder.mutation<
+      AgreementInterface,
+      CreateAgreementRequestInterface
+    >({
       query: (body) => ({
         url: "/agreements",
         method: "POST",
-        body
+        body,
       }),
-      invalidatesTags: ["AgreementCheck"]
+      invalidatesTags: ["AgreementCheck"],
     }),
-    acceptAgreement: builder.mutation<AcceptAgreementResponseInterface, CreateAgreementRequestInterface>({
+    acceptAgreement: builder.mutation<
+      AcceptAgreementResponseInterface,
+      CreateAgreementRequestInterface
+    >({
       query: (body) => ({
         url: "/agreements/accept",
         method: "POST",
-        body
+        body,
       }),
-      invalidatesTags: ["AgreementCheck"]
-    })
-  })
+      invalidatesTags: ["AgreementCheck"],
+    }),
+  }),
 });
 
-export const { useCheckAgreementQuery, useCreateAgreementMutation, useAcceptAgreementMutation } = legalApi;
+export const {
+  useCheckAgreementQuery,
+  useCreateAgreementMutation,
+  useAcceptAgreementMutation,
+} = legalApi;

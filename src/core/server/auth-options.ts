@@ -2,21 +2,22 @@ import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { fetchOAuthUser } from "@/core/server/oauth-user";
 
-const isSecureCookie = process.env.NEXTAUTH_URL?.startsWith("https://") ?? false;
+const isSecureCookie =
+  process.env.NEXTAUTH_URL?.startsWith("https://") ?? false;
 const cookiePrefix = "sg-esign-app";
 
 async function refreshAccessToken(token: Record<string, unknown>) {
   if (!token["refreshToken"] || !process.env.NEXT_OAUTH_TOKEN_URL) {
     return {
       ...token,
-      error: "RefreshAccessTokenError"
+      error: "RefreshAccessTokenError",
     };
   }
 
   try {
     const body = new URLSearchParams({
       grant_type: "refresh_token",
-      refresh_token: token["refreshToken"] as string
+      refresh_token: token["refreshToken"] as string,
     });
 
     if (process.env.NEXT_OAUTH_CLIENT_ID) {
@@ -30,10 +31,10 @@ async function refreshAccessToken(token: Record<string, unknown>) {
     const response = await fetch(process.env.NEXT_OAUTH_TOKEN_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: body.toString(),
-      cache: "no-store"
+      cache: "no-store",
     });
 
     const refreshedTokens = await response.json();
@@ -44,21 +45,26 @@ async function refreshAccessToken(token: Record<string, unknown>) {
     return {
       ...token,
       accessToken: refreshedTokens.access_token ?? refreshedTokens.accessToken,
-      refreshToken: refreshedTokens.refresh_token ?? refreshedTokens.refreshToken ?? token["refreshToken"],
+      refreshToken:
+        refreshedTokens.refresh_token ??
+        refreshedTokens.refreshToken ??
+        token["refreshToken"],
       accessTokenExpiresAt:
-        refreshedTokens.access_token_expires_at ?? refreshedTokens.accessTokenExpiresAt ?? token["accessTokenExpiresAt"],
+        refreshedTokens.access_token_expires_at ??
+        refreshedTokens.accessTokenExpiresAt ??
+        token["accessTokenExpiresAt"],
       refreshTokenExpiresAt:
         refreshedTokens.refresh_token_expires_at ??
         refreshedTokens.refreshTokenExpiresAt ??
         token["refreshTokenExpiresAt"],
-      error: undefined
+      error: undefined,
     };
   } catch (error) {
     console.error("Error refreshing access token", error);
 
     return {
       ...token,
-      error: "RefreshAccessTokenError"
+      error: "RefreshAccessTokenError",
     };
   }
 }
@@ -71,8 +77,8 @@ export const authOptions: AuthOptions = {
       credentials: {
         token: {
           label: "Token",
-          type: "text"
-        }
+          type: "text",
+        },
       },
       async authorize(credentials) {
         const externalToken = credentials?.token;
@@ -86,9 +92,9 @@ export const authOptions: AuthOptions = {
         return {
           ...user,
           id: String(user.id),
-          authProvider: "external-token"
+          authProvider: "external-token",
         };
-      }
+      },
     }),
     {
       type: "oauth",
@@ -105,10 +111,10 @@ export const authOptions: AuthOptions = {
           name: [profile.firstName, profile.lastName].filter(Boolean).join(" "),
           email: profile.email,
           image: profile.picture,
-          ...profile
+          ...profile,
         };
-      }
-    }
+      },
+    },
   ],
   callbacks: {
     async signIn({ user }) {
@@ -122,17 +128,25 @@ export const authOptions: AuthOptions = {
         token["region"] = user["region"];
         token["arn"] = user["arn"];
         token["tags"] = user["tags"];
-        token["authProvider"] = account?.provider ?? user["authProvider"] ?? "oauth";
-        token["accessToken"] = account?.provider === "oauth" ? account?.["access_token"] ?? account?.["accessToken"] : undefined;
+        token["authProvider"] =
+          account?.provider ?? user["authProvider"] ?? "oauth";
+        token["accessToken"] =
+          account?.provider === "oauth"
+            ? account?.["access_token"] ?? account?.["accessToken"]
+            : undefined;
         token["refreshToken"] =
-          account?.provider === "oauth" ? account?.["refresh_token"] ?? account?.["refreshToken"] : undefined;
+          account?.provider === "oauth"
+            ? account?.["refresh_token"] ?? account?.["refreshToken"]
+            : undefined;
         token["accessTokenExpiresAt"] =
           account?.provider === "oauth"
-            ? account?.["access_token_expires_at"] ?? account?.["accessTokenExpiresAt"]
+            ? account?.["access_token_expires_at"] ??
+              account?.["accessTokenExpiresAt"]
             : undefined;
         token["refreshTokenExpiresAt"] =
           account?.provider === "oauth"
-            ? account?.["refresh_token_expires_at"] ?? account?.["refreshTokenExpiresAt"]
+            ? account?.["refresh_token_expires_at"] ??
+              account?.["refreshTokenExpiresAt"]
             : undefined;
         return token;
       }
@@ -145,7 +159,9 @@ export const authOptions: AuthOptions = {
         return token;
       }
 
-      const accessTokenExpiresAt = Date.parse(String(token["accessTokenExpiresAt"] ?? 0));
+      const accessTokenExpiresAt = Date.parse(
+        String(token["accessTokenExpiresAt"] ?? 0)
+      );
 
       if (accessTokenExpiresAt && Date.now() < accessTokenExpiresAt - 30000) {
         return token;
@@ -157,21 +173,27 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         session.user.id = Number(token.sub);
         session.user.orgId = Number(token["orgId"]);
-        session.user.selectedOrgId = token["selectedOrgId"] ? Number(token["selectedOrgId"]) : undefined;
+        session.user.selectedOrgId = token["selectedOrgId"]
+          ? Number(token["selectedOrgId"])
+          : undefined;
         session.user.primaryUserId = Number(token["primaryUserId"]);
         session.user.region = String(token["region"] ?? "");
-        session.user.tags = Array.isArray(token["tags"]) ? token["tags"].map(String) : [];
+        session.user.tags = Array.isArray(token["tags"])
+          ? token["tags"].map(String)
+          : [];
         session.user.arn = String(token["arn"] ?? "");
-        session.authProvider = token["authProvider"] ? String(token["authProvider"]) : undefined;
+        session.authProvider = token["authProvider"]
+          ? String(token["authProvider"])
+          : undefined;
         session.error = token["error"] ? String(token["error"]) : undefined;
       }
 
       return session;
-    }
+    },
   },
   session: {
     strategy: "jwt",
-    maxAge: 60 * 10
+    maxAge: 60 * 10,
   },
   cookies: {
     sessionToken: {
@@ -180,16 +202,16 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: isSecureCookie
-      }
+        secure: isSecureCookie,
+      },
     },
     callbackUrl: {
       name: `${cookiePrefix}.callback-url`,
       options: {
         sameSite: "lax",
         path: "/",
-        secure: isSecureCookie
-      }
+        secure: isSecureCookie,
+      },
     },
     csrfToken: {
       name: `${cookiePrefix}.csrf-token`,
@@ -197,8 +219,8 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: isSecureCookie
-      }
+        secure: isSecureCookie,
+      },
     },
     pkceCodeVerifier: {
       name: `${cookiePrefix}.pkce.code_verifier`,
@@ -206,8 +228,8 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: isSecureCookie
-      }
+        secure: isSecureCookie,
+      },
     },
     state: {
       name: `${cookiePrefix}.state`,
@@ -215,8 +237,8 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: isSecureCookie
-      }
+        secure: isSecureCookie,
+      },
     },
     nonce: {
       name: `${cookiePrefix}.nonce`,
@@ -224,10 +246,10 @@ export const authOptions: AuthOptions = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: isSecureCookie
-      }
-    }
+        secure: isSecureCookie,
+      },
+    },
   },
   secret: process.env.NEXT_AUTH_SECRET,
-  debug: false
+  debug: false,
 };

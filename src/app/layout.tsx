@@ -12,11 +12,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: dictionary.metadata.title,
-    description: dictionary.metadata.description
+    description: dictionary.metadata.description,
   };
 }
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   const language = resolveServerLanguage(headers().get("accept-language"));
 
   return (
