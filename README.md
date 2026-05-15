@@ -1,4 +1,4 @@
-# sg-partnerships-contracts-app
+# sg-esign-app
 
 Next.js application for displaying legal documents and recording user agreement decisions.
 
