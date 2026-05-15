@@ -1,4 +1,9 @@
-import { BaseQueryFn, FetchArgs, FetchBaseQueryError, fetchBaseQuery } from "@reduxjs/toolkit/query";
+import {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+  fetchBaseQuery,
+} from "@reduxjs/toolkit/query";
 import { signOut } from "next-auth/react";
 import { prepareAuthenticationHeaders } from "@/core/helpers/prepare-authentication-headers";
 import { resetAuth } from "@/core/slices/app.slice";
@@ -9,7 +14,7 @@ export const createAuthenticatedBaseQuery = (
   const baseQuery = fetchBaseQuery({
     baseUrl,
     responseHandler: "json",
-    prepareHeaders: prepareAuthenticationHeaders
+    prepareHeaders: prepareAuthenticationHeaders,
   });
 
   return async (args, api, extraOptions) => {

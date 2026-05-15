@@ -22,14 +22,16 @@ export function resolveServerLanguage(acceptLanguageHeader?: string | null) {
 }
 
 export function getServerDictionary(language: string) {
-  const resolvedLanguage = resolveSupportedLanguage(language) || getFallbackLanguage();
+  const resolvedLanguage =
+    resolveSupportedLanguage(language) || getFallbackLanguage();
 
-  const dictionary = loadDictionary(resolvedLanguage) || loadDictionary(getFallbackLanguage());
+  const dictionary =
+    loadDictionary(resolvedLanguage) || loadDictionary(getFallbackLanguage());
 
   if (!dictionary) {
     throw new Error(
       `Missing locale dictionary for "${resolvedLanguage}" and fallback "${getFallbackLanguage()}". ` +
-        'Check NEXT_DEFAULT_LANGUAGE, NEXT_AVAILABLE_LANGUAGES, and public/locales/*.json.'
+        "Check NEXT_DEFAULT_LANGUAGE, NEXT_AVAILABLE_LANGUAGES, and public/locales/*.json."
     );
   }
 
@@ -58,14 +60,18 @@ function resolveSupportedLanguage(language: string, useFallback = true) {
   const fallback = getFallbackLanguage();
   const supported = getSupportedLanguages();
   const compact = language.trim().replace("_", "-");
-  const exactMatch = supported.find((item) => item.toLowerCase() === compact.toLowerCase());
+  const exactMatch = supported.find(
+    (item) => item.toLowerCase() === compact.toLowerCase()
+  );
 
   if (exactMatch) {
     return exactMatch;
   }
 
   const normalizedLanguage = normalizeBaseLanguage(compact);
-  const baseMatch = supported.find((item) => normalizeBaseLanguage(item) === normalizedLanguage);
+  const baseMatch = supported.find(
+    (item) => normalizeBaseLanguage(item) === normalizedLanguage
+  );
 
   if (baseMatch) {
     return baseMatch;
@@ -75,7 +81,12 @@ function resolveSupportedLanguage(language: string, useFallback = true) {
 }
 
 function loadDictionary(language: string) {
-  const dictionaryPath = path.join(process.cwd(), "public", "locales", `${language}.json`);
+  const dictionaryPath = path.join(
+    process.cwd(),
+    "public",
+    "locales",
+    `${language}.json`
+  );
 
   if (!existsSync(dictionaryPath)) {
     return undefined;

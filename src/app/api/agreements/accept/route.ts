@@ -22,15 +22,24 @@ export async function POST(request: NextRequest) {
   }
 
   if (!legalApiUrl) {
-    return NextResponse.json({ error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." },
+      { status: 500 }
+    );
   }
 
   if (!accountApiUrl) {
-    return NextResponse.json({ error: "NEXT_ACCOUNT_API_URL is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { error: "NEXT_ACCOUNT_API_URL is not configured." },
+      { status: 500 }
+    );
   }
 
   if (configuredGroupIds.length === 0) {
-    return NextResponse.json({ error: "NEXT_ACCOUNT_GROUP_IDS is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { error: "NEXT_ACCOUNT_GROUP_IDS is not configured." },
+      { status: 500 }
+    );
   }
 
   const requestBody = (await request.json()) as CreateAgreementRequestInterface;
@@ -46,40 +55,67 @@ export async function POST(request: NextRequest) {
     method: "POST",
     headers: buildHeaders(authorization, acceptLanguage),
     body: JSON.stringify(body),
-    cache: "no-store"
+    cache: "no-store",
   });
 
   const agreementData = await readJson(agreementResponse);
-  const alreadySigned = isAlreadySignedError(agreementResponse.status, agreementData);
+  const alreadySigned = isAlreadySignedError(
+    agreementResponse.status,
+    agreementData
+  );
   const createdAgreementId =
-    !alreadySigned && agreementResponse.ok && agreementData && typeof agreementData === "object" && "id" in agreementData
+    !alreadySigned &&
+    agreementResponse.ok &&
+    agreementData &&
+    typeof agreementData === "object" &&
+    "id" in agreementData
       ? Number((agreementData as Record<string, unknown>).id)
       : null;
 
   if (!agreementResponse.ok && !alreadySigned) {
     return NextResponse.json(
-      { error: extractErrorMessage(agreementData, "Unable to create agreement.") },
+      {
+        error: extractErrorMessage(
+          agreementData,
+          "Unable to create agreement."
+        ),
+      },
       { status: agreementResponse.status }
     );
   }
 
   for (const groupId of configuredGroupIds) {
     const membershipSearchParams = new URLSearchParams({
-      "userId[0]": String(body.userId)
+      "userId[0]": String(body.userId),
     });
 
-    const membershipResponse = await fetch(`${accountApiUrl}/groups/${groupId}/members?${membershipSearchParams.toString()}`, {
-      method: "GET",
-      headers: buildHeaders(authorization, acceptLanguage, false),
-      cache: "no-store"
-    });
+    const membershipResponse = await fetch(
+      `${accountApiUrl}/groups/${groupId}/members?${membershipSearchParams.toString()}`,
+      {
+        method: "GET",
+        headers: buildHeaders(authorization, acceptLanguage, false),
+        cache: "no-store",
+      }
+    );
 
-    const membershipData = (await readJson(membershipResponse)) as GroupMemberSearchResponse | null;
+    const membershipData = (await readJson(
+      membershipResponse
+    )) as GroupMemberSearchResponse | null;
 
     if (!membershipResponse.ok) {
-      await rollbackAgreementIfNeeded(legalApiUrl, authorization, acceptLanguage, createdAgreementId);
+      await rollbackAgreementIfNeeded(
+        legalApiUrl,
+        authorization,
+        acceptLanguage,
+        createdAgreementId
+      );
       return NextResponse.json(
-        { error: extractErrorMessage(membershipData, `Unable to check group ${groupId} membership.`) },
+        {
+          error: extractErrorMessage(
+            membershipData,
+            `Unable to check group ${groupId} membership.`
+          ),
+        },
         { status: membershipResponse.status }
       );
     }
@@ -87,22 +123,35 @@ export async function POST(request: NextRequest) {
     const existingMember = membershipData?.data?.[0];
 
     if (!existingMember) {
-      const createMemberResponse = await fetch(`${accountApiUrl}/groups/${groupId}/members`, {
-        method: "POST",
-        headers: buildHeaders(authorization, acceptLanguage),
-        body: JSON.stringify({
-          userId: body.userId,
-          status: "active"
-        }),
-        cache: "no-store"
-      });
+      const createMemberResponse = await fetch(
+        `${accountApiUrl}/groups/${groupId}/members`,
+        {
+          method: "POST",
+          headers: buildHeaders(authorization, acceptLanguage),
+          body: JSON.stringify({
+            userId: body.userId,
+            status: "active",
+          }),
+          cache: "no-store",
+        }
+      );
 
       const createMemberData = await readJson(createMemberResponse);
 
       if (!createMemberResponse.ok) {
-        await rollbackAgreementIfNeeded(legalApiUrl, authorization, acceptLanguage, createdAgreementId);
+        await rollbackAgreementIfNeeded(
+          legalApiUrl,
+          authorization,
+          acceptLanguage,
+          createdAgreementId
+        );
         return NextResponse.json(
-          { error: extractErrorMessage(createMemberData, `Unable to add user to group ${groupId}.`) },
+          {
+            error: extractErrorMessage(
+              createMemberData,
+              `Unable to add user to group ${groupId}.`
+            ),
+          },
           { status: createMemberResponse.status }
         );
       }
@@ -111,21 +160,34 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingMember.status !== "active") {
-      const updateMemberResponse = await fetch(`${accountApiUrl}/groups/${groupId}/members/${existingMember.id}`, {
-        method: "PUT",
-        headers: buildHeaders(authorization, acceptLanguage),
-        body: JSON.stringify({
-          status: "active"
-        }),
-        cache: "no-store"
-      });
+      const updateMemberResponse = await fetch(
+        `${accountApiUrl}/groups/${groupId}/members/${existingMember.id}`,
+        {
+          method: "PUT",
+          headers: buildHeaders(authorization, acceptLanguage),
+          body: JSON.stringify({
+            status: "active",
+          }),
+          cache: "no-store",
+        }
+      );
 
       const updateMemberData = await readJson(updateMemberResponse);
 
       if (!updateMemberResponse.ok) {
-        await rollbackAgreementIfNeeded(legalApiUrl, authorization, acceptLanguage, createdAgreementId);
+        await rollbackAgreementIfNeeded(
+          legalApiUrl,
+          authorization,
+          acceptLanguage,
+          createdAgreementId
+        );
         return NextResponse.json(
-          { error: extractErrorMessage(updateMemberData, `Unable to activate group ${groupId} membership.`) },
+          {
+            error: extractErrorMessage(
+              updateMemberData,
+              `Unable to activate group ${groupId} membership.`
+            ),
+          },
           { status: updateMemberResponse.status }
         );
       }
@@ -136,12 +198,12 @@ export async function POST(request: NextRequest) {
     {
       agreement: agreementData,
       alreadySigned,
-      groupIds: configuredGroupIds
+      groupIds: configuredGroupIds,
     },
     {
       headers: {
-        "Cache-Control": "no-store"
-      }
+        "Cache-Control": "no-store",
+      },
     }
   );
 }
@@ -153,11 +215,15 @@ function parseGroupIds(rawValue?: string) {
     .filter((value) => Number.isInteger(value) && value > 0);
 }
 
-function buildHeaders(authorization: string, acceptLanguage: string | null, includeJsonContentType = true) {
+function buildHeaders(
+  authorization: string,
+  acceptLanguage: string | null,
+  includeJsonContentType = true
+) {
   return {
     Authorization: authorization,
     ...(includeJsonContentType ? { "Content-Type": "application/json" } : {}),
-    ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {})
+    ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {}),
   };
 }
 
@@ -184,11 +250,14 @@ function extractErrorMessage(data: unknown, fallback: string) {
 function isAlreadySignedError(status: number, data: unknown) {
   if (status !== 422) return false;
 
-  const documentIdErrors = (data as { validation?: { documentId?: unknown } })?.validation?.documentId;
+  const documentIdErrors = (data as { validation?: { documentId?: unknown } })
+    ?.validation?.documentId;
 
   return (
     Array.isArray(documentIdErrors) &&
-    documentIdErrors.some((item) => typeof item === "string" && item.includes("already been signed"))
+    documentIdErrors.some(
+      (item) => typeof item === "string" && item.includes("already been signed")
+    )
   );
 }
 
@@ -206,7 +275,7 @@ async function rollbackAgreementIfNeeded(
     await fetch(`${legalApiUrl}/agreements/${agreementId}`, {
       method: "DELETE",
       headers: buildHeaders(authorization, acceptLanguage, false),
-      cache: "no-store"
+      cache: "no-store",
     });
   } catch {
     // Best-effort compensation. The original group-membership error is still the primary failure.

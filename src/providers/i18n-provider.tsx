@@ -5,7 +5,13 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import { useContextLanguage } from "@/contexts/language-context";
 
-export function AppI18nProvider({ children, i18n }: { children: React.ReactNode; i18n: I18nInstance }) {
+export function AppI18nProvider({
+  children,
+  i18n,
+}: {
+  children: React.ReactNode;
+  i18n: I18nInstance;
+}) {
   const [loading, setLoading] = useState(true);
   const { setLanguage } = useContextLanguage();
 
@@ -29,10 +35,16 @@ export function AppI18nProvider({ children, i18n }: { children: React.ReactNode;
         ? options.fallbackLng
         : "en-US";
       const supported = (options.supportedLngs as string[] | undefined) ?? [];
-      const raw = (navigator.languages?.[0] || navigator.language || fallback).toLowerCase();
+      const raw = (
+        navigator.languages?.[0] ||
+        navigator.language ||
+        fallback
+      ).toLowerCase();
       const base = raw.split("-")[0];
       const exactMatch = supported.find((item) => item.toLowerCase() === raw);
-      const baseMatch = supported.find((item) => item.split("-")[0]?.toLowerCase() === base);
+      const baseMatch = supported.find(
+        (item) => item.split("-")[0]?.toLowerCase() === base
+      );
       const selected = exactMatch || baseMatch || fallback;
 
       await i18n.changeLanguage(selected);

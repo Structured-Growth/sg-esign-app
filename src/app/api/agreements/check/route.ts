@@ -13,28 +13,37 @@ export async function GET(request: NextRequest) {
   }
 
   if (!legalApiUrl) {
-    return NextResponse.json({ error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." }, { status: 500 });
+    return NextResponse.json(
+      { error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." },
+      { status: 500 }
+    );
   }
 
   if (!documentCode) {
-    return NextResponse.json({ error: "documentCode is required." }, { status: 400 });
+    return NextResponse.json(
+      { error: "documentCode is required." },
+      { status: 400 }
+    );
   }
 
   try {
     const serviceAccessToken = await getOAuthServiceAccessToken();
     const searchParams = new URLSearchParams({
       accountId: String(user.id),
-      documentCode
+      documentCode,
     });
 
-    const response = await fetch(`${legalApiUrl}/agreements/check?${searchParams.toString()}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${serviceAccessToken}`,
-        ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {})
-      },
-      cache: "no-store"
-    });
+    const response = await fetch(
+      `${legalApiUrl}/agreements/check?${searchParams.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${serviceAccessToken}`,
+          ...(acceptLanguage ? { "Accept-Language": acceptLanguage } : {}),
+        },
+        cache: "no-store",
+      }
+    );
 
     const data = await response.json().catch(() => null);
 
@@ -47,12 +56,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data, {
       headers: {
-        "Cache-Control": "no-store"
-      }
+        "Cache-Control": "no-store",
+      },
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to load agreement." },
+      {
+        error:
+          error instanceof Error ? error.message : "Unable to load agreement.",
+      },
       { status: 500 }
     );
   }

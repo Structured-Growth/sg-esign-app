@@ -5,9 +5,10 @@ import appSlice from "@/core/slices/app.slice";
 export const store = configureStore({
   reducer: {
     app: appSlice,
-    [legalApi.reducerPath]: legalApi.reducer
+    [legalApi.reducerPath]: legalApi.reducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(legalApi.middleware)
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(legalApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

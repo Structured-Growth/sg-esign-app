@@ -16,7 +16,7 @@ const initialState: AppState = {
   authMode: null,
   isReady: false,
   isAuthenticating: true,
-  error: null
+  error: null,
 };
 
 const appSlice = createSlice({
@@ -59,8 +59,8 @@ const appSlice = createSlice({
       state.isReady = false;
       state.isAuthenticating = false;
       state.error = null;
-    }
-  }
+    },
+  },
 });
 
 export const { resetAuth, setAuthSession, setAuthStatus } = appSlice.actions;

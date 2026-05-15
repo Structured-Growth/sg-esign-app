@@ -8,15 +8,27 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAcceptAgreementMutation, useCheckAgreementQuery, useCreateAgreementMutation } from "@/core/api/legal.api";
-import { AgreementStatus, CheckAgreementResponseInterface } from "@/core/interfaces/legal.interface";
+import {
+  useAcceptAgreementMutation,
+  useCheckAgreementQuery,
+  useCreateAgreementMutation,
+} from "@/core/api/legal.api";
+import {
+  AgreementStatus,
+  CheckAgreementResponseInterface,
+} from "@/core/interfaces/legal.interface";
 import { useAuthState } from "@/hooks/use-auth-state";
 
 function renderDocumentText(text: string) {
   const hasHtml = /<\/?[a-z][\s\S]*>/i.test(text);
 
   if (hasHtml) {
-    return <Box className="document-text" dangerouslySetInnerHTML={{ __html: text }} />;
+    return (
+      <Box
+        className="document-text"
+        dangerouslySetInnerHTML={{ __html: text }}
+      />
+    );
   }
 
   return (
@@ -28,14 +40,17 @@ function renderDocumentText(text: string) {
 
 function CompletedState({
   title,
-  description
+  description,
 }: {
   title: string;
   description: string;
 }) {
   return (
     <Stack minHeight="100vh" alignItems="center" justifyContent="center" px={3}>
-      <Paper elevation={1} sx={{ width: "100%", maxWidth: 480, p: 5, borderRadius: 2 }}>
+      <Paper
+        elevation={1}
+        sx={{ width: "100%", maxWidth: 480, p: 5, borderRadius: 2 }}
+      >
         <Stack spacing={2} alignItems="center" textAlign="center">
           <Typography variant="h5">{title}</Typography>
           <Typography color="text.secondary">{description}</Typography>
@@ -45,7 +60,11 @@ function CompletedState({
   );
 }
 
-export default function DocumentPage({ params }: { params: { documentCode: string } }) {
+export default function DocumentPage({
+  params,
+}: {
+  params: { documentCode: string };
+}) {
   const { t } = useTranslation();
   const { isReady, isAuthenticating, error: authError, user } = useAuthState();
   const [actionState, setActionState] = useState<AgreementStatus | null>(null);
@@ -56,10 +75,10 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
   const checkAgreementState = useCheckAgreementQuery(
     {
       accountId: user?.id || 0,
-      documentCode: params.documentCode
+      documentCode: params.documentCode,
     },
     {
-      skip: !isReady || !user?.id
+      skip: !isReady || !user?.id,
     }
   );
 
@@ -71,7 +90,10 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
     return checkAgreementState.data?.agreement?.status || null;
   }, [actionState, checkAgreementState.data?.agreement?.status]);
 
-  const handleAgreement = async (status: AgreementStatus, payload: CheckAgreementResponseInterface) => {
+  const handleAgreement = async (
+    status: AgreementStatus,
+    payload: CheckAgreementResponseInterface
+  ) => {
     if (!user) {
       return;
     }
@@ -83,7 +105,7 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
       accountId: user.id,
       userId: user.primaryUserId,
       status,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
     };
 
     if (status === "active") {
@@ -96,9 +118,14 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
         if (error && typeof error === "object" && "status" in error) {
           const errorData = "data" in error ? error.data : null;
           const message =
-            errorData && typeof errorData === "object" && "error" in errorData && typeof errorData.error === "string"
+            errorData &&
+            typeof errorData === "object" &&
+            "error" in errorData &&
+            typeof errorData.error === "string"
               ? errorData.error
-              : t("document.saveErrorWithStatus", { status: String(error.status) });
+              : t("document.saveErrorWithStatus", {
+                  status: String(error.status),
+                });
 
           setAcceptError(message);
         } else {
@@ -136,16 +163,28 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
 
   if (isAuthenticating || (!isReady && !authError)) {
     return (
-      <Stack minHeight="100vh" alignItems="center" justifyContent="center" spacing={2}>
+      <Stack
+        minHeight="100vh"
+        alignItems="center"
+        justifyContent="center"
+        spacing={2}
+      >
         <CircularProgress />
-        <Typography color="text.secondary">{t("common.preparingSession")}</Typography>
+        <Typography color="text.secondary">
+          {t("common.preparingSession")}
+        </Typography>
       </Stack>
     );
   }
 
   if (authError) {
     return (
-      <Stack minHeight="100vh" alignItems="center" justifyContent="center" px={3}>
+      <Stack
+        minHeight="100vh"
+        alignItems="center"
+        justifyContent="center"
+        px={3}
+      >
         <Alert severity="error" sx={{ width: "100%", maxWidth: 480 }}>
           {authError}
         </Alert>
@@ -156,11 +195,18 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
   if (checkAgreementState.error) {
     const message =
       "status" in checkAgreementState.error
-        ? t("document.loadErrorWithStatus", { status: String(checkAgreementState.error.status) })
+        ? t("document.loadErrorWithStatus", {
+            status: String(checkAgreementState.error.status),
+          })
         : t("document.loadError");
 
     return (
-      <Stack minHeight="100vh" alignItems="center" justifyContent="center" px={3}>
+      <Stack
+        minHeight="100vh"
+        alignItems="center"
+        justifyContent="center"
+        px={3}
+      >
         <Alert severity="error" sx={{ width: "100%", maxWidth: 480 }}>
           {message}
         </Alert>
@@ -170,7 +216,12 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
 
   if (checkAgreementState.isLoading || !checkAgreementState.data) {
     return (
-      <Stack minHeight="100vh" alignItems="center" justifyContent="center" spacing={2}>
+      <Stack
+        minHeight="100vh"
+        alignItems="center"
+        justifyContent="center"
+        spacing={2}
+      >
         <CircularProgress />
         <Typography color="text.secondary">{t("document.loading")}</Typography>
       </Stack>
@@ -180,13 +231,21 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
   const { document } = checkAgreementState.data;
 
   return (
-    <Box minHeight="100vh" px={{ xs: 2, sm: 3 }} py={{ xs: 2, sm: 4 }} bgcolor="#f4f6f8">
+    <Box
+      minHeight="100vh"
+      px={{ xs: 2, sm: 3 }}
+      py={{ xs: 2, sm: 4 }}
+      bgcolor="#f4f6f8"
+    >
       <Stack spacing={2} maxWidth={960} mx="auto">
         <Paper elevation={1} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
           <Stack spacing={1}>
             <Typography variant="h4">{document.title}</Typography>
             <Typography color="text.secondary">
-              {t("document.meta", { code: document.code, version: document.version })}
+              {t("document.meta", {
+                code: document.code,
+                version: document.version,
+              })}
             </Typography>
           </Stack>
         </Paper>
@@ -200,7 +259,9 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
         {createAgreementState.error && (
           <Alert severity="error">
             {"status" in createAgreementState.error
-              ? t("document.saveErrorWithStatus", { status: String(createAgreementState.error.status) })
+              ? t("document.saveErrorWithStatus", {
+                  status: String(createAgreementState.error.status),
+                })
               : t("document.saveError")}
           </Alert>
         )}
@@ -210,23 +271,29 @@ export default function DocumentPage({ params }: { params: { documentCode: strin
           spacing={2}
           sx={{ width: "100%" }}
         >
-            <Button
-              variant="contained"
-              size="large"
-              disabled={createAgreementState.isLoading || acceptAgreementState.isLoading}
-              onClick={() => handleAgreement("active", checkAgreementState.data)}
-              sx={{ minHeight: 52, width: { xs: "100%", sm: "auto" } }}
-            >
+          <Button
+            variant="contained"
+            size="large"
+            disabled={
+              createAgreementState.isLoading || acceptAgreementState.isLoading
+            }
+            onClick={() => handleAgreement("active", checkAgreementState.data)}
+            sx={{ minHeight: 52, width: { xs: "100%", sm: "auto" } }}
+          >
             {t("document.accept")}
           </Button>
           <Button
-              variant="outlined"
-              size="large"
-              color="inherit"
-              disabled={createAgreementState.isLoading || acceptAgreementState.isLoading}
-              onClick={() => handleAgreement("inactive", checkAgreementState.data)}
-              sx={{ minHeight: 52, width: { xs: "100%", sm: "auto" } }}
-            >
+            variant="outlined"
+            size="large"
+            color="inherit"
+            disabled={
+              createAgreementState.isLoading || acceptAgreementState.isLoading
+            }
+            onClick={() =>
+              handleAgreement("inactive", checkAgreementState.data)
+            }
+            sx={{ minHeight: 52, width: { xs: "100%", sm: "auto" } }}
+          >
             {t("document.decline")}
           </Button>
         </Stack>
