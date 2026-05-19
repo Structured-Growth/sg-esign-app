@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { CreateAgreementRequestInterface } from "@/core/interfaces/legal.interface";
 import { resolveRequestUser } from "@/core/server/request-user";
 import { getOAuthServiceAccessToken } from "@/core/server/oauth-service-token";
 
-interface GroupMemberSearchResponse {
-  data?: Array<{
-    id: number;
-    status?: string;
-  }>;
-}
-
 export async function POST(request: NextRequest) {
   const user = await resolveRequestUser(request);
   const legalApiUrl = process.env.NEXT_PUBLIC_LEGAL_API_URL;
-  const accountApiUrl = process.env.NEXT_ACCOUNT_API_URL;
-  const configuredGroupIds = parseGroupIds(process.env.NEXT_ACCOUNT_GROUP_IDS);
+  const eventBusName = process.env.NEXT_EVENTBUS_NAME;
+  const eventSource = process.env.NEXT_APP_PREFIX;
   const acceptLanguage = request.headers.get("accept-language");
 
   if (!user) {
@@ -28,16 +22,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!accountApiUrl) {
+  if (!eventBusName) {
     return NextResponse.json(
-      { error: "NEXT_ACCOUNT_API_URL is not configured." },
+      { error: "NEXT_EVENTBUS_NAME is not configured." },
       { status: 500 }
     );
   }
 
-  if (configuredGroupIds.length === 0) {
+  if (!eventSource) {
     return NextResponse.json(
-      { error: "NEXT_ACCOUNT_GROUP_IDS is not configured." },
+      { error: "NEXT_APP_PREFIX is not configured." },
       { status: 500 }
     );
   }
@@ -84,121 +78,47 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  for (const groupId of configuredGroupIds) {
-    const membershipSearchParams = new URLSearchParams({
-      "userId[0]": String(body.userId),
+  try {
+    await enqueueGroupMembershipSync({
+      eventBusName,
+      eventSource,
+      region: body.region,
+      orgId: body.orgId,
+      accountId: body.accountId,
+      userId: body.userId,
+      agreementId: createdAgreementId,
+      alreadySigned,
+      language: acceptLanguage,
     });
-
-    const membershipResponse = await fetch(
-      `${accountApiUrl}/groups/${groupId}/members?${membershipSearchParams.toString()}`,
-      {
-        method: "GET",
-        headers: buildHeaders(authorization, acceptLanguage, false),
-        cache: "no-store",
-      }
+  } catch (error) {
+    await rollbackAgreementIfNeeded(
+      legalApiUrl,
+      authorization,
+      acceptLanguage,
+      createdAgreementId
     );
 
-    const membershipData = (await readJson(
-      membershipResponse
-    )) as GroupMemberSearchResponse | null;
-
-    if (!membershipResponse.ok) {
-      await rollbackAgreementIfNeeded(
-        legalApiUrl,
-        authorization,
-        acceptLanguage,
-        createdAgreementId
-      );
-      return NextResponse.json(
-        {
-          error: extractErrorMessage(
-            membershipData,
-            `Unable to check group ${groupId} membership.`
-          ),
-        },
-        { status: membershipResponse.status }
-      );
-    }
-
-    const existingMember = membershipData?.data?.[0];
-
-    if (!existingMember) {
-      const createMemberResponse = await fetch(
-        `${accountApiUrl}/groups/${groupId}/members`,
-        {
-          method: "POST",
-          headers: buildHeaders(authorization, acceptLanguage),
-          body: JSON.stringify({
-            userId: body.userId,
-            status: "active",
-          }),
-          cache: "no-store",
-        }
-      );
-
-      const createMemberData = await readJson(createMemberResponse);
-
-      if (!createMemberResponse.ok) {
-        await rollbackAgreementIfNeeded(
-          legalApiUrl,
-          authorization,
-          acceptLanguage,
-          createdAgreementId
-        );
-        return NextResponse.json(
-          {
-            error: extractErrorMessage(
-              createMemberData,
-              `Unable to add user to group ${groupId}.`
-            ),
-          },
-          { status: createMemberResponse.status }
-        );
-      }
-
-      continue;
-    }
-
-    if (existingMember.status !== "active") {
-      const updateMemberResponse = await fetch(
-        `${accountApiUrl}/groups/${groupId}/members/${existingMember.id}`,
-        {
-          method: "PUT",
-          headers: buildHeaders(authorization, acceptLanguage),
-          body: JSON.stringify({
-            status: "active",
-          }),
-          cache: "no-store",
-        }
-      );
-
-      const updateMemberData = await readJson(updateMemberResponse);
-
-      if (!updateMemberResponse.ok) {
-        await rollbackAgreementIfNeeded(
-          legalApiUrl,
-          authorization,
-          acceptLanguage,
-          createdAgreementId
-        );
-        return NextResponse.json(
-          {
-            error: extractErrorMessage(
-              updateMemberData,
-              `Unable to activate group ${groupId} membership.`
-            ),
-          },
-          { status: updateMemberResponse.status }
-        );
-      }
-    }
+    return NextResponse.json(
+      {
+        error: extractErrorMessage(
+          error,
+          "Unable to queue group membership synchronization."
+        ),
+      },
+      { status: 502 }
+    );
   }
 
   return NextResponse.json(
     {
       agreement: agreementData,
       alreadySigned,
-      groupIds: configuredGroupIds,
+      queueSubject: buildEventArn({
+        appPrefix: eventSource,
+        region: body.region,
+        orgId: body.orgId,
+        accountId: body.accountId,
+      }),
     },
     {
       headers: {
@@ -208,11 +128,62 @@ export async function POST(request: NextRequest) {
   );
 }
 
-function parseGroupIds(rawValue?: string) {
-  return (rawValue || "")
-    .split(",")
-    .map((value) => Number(value.trim()))
-    .filter((value) => Number.isInteger(value) && value > 0);
+async function enqueueGroupMembershipSync(params: {
+  eventBusName: string;
+  eventSource: string;
+  region: string;
+  orgId: number;
+  accountId: number;
+  userId: number;
+  agreementId: number | null;
+  alreadySigned: boolean;
+  language: string | null;
+}) {
+  const region = process.env.AWS_DEFAULT_REGION;
+
+  if (!region) {
+    throw new Error("AWS region is not configured.");
+  }
+
+  const client = new EventBridgeClient({ region });
+
+  const response = await client.send(
+    new PutEventsCommand({
+      Entries: [
+        {
+          EventBusName: params.eventBusName,
+          Source: params.eventSource,
+          DetailType: buildEventArn({
+            appPrefix: params.eventSource,
+            region: params.region,
+            orgId: params.orgId,
+            accountId: params.accountId,
+          }),
+          Detail: JSON.stringify({
+            accountId: params.accountId,
+            userId: params.userId,
+            agreementId: params.agreementId,
+            alreadySigned: params.alreadySigned,
+            language: params.language,
+            requestedAt: new Date().toISOString(),
+          }),
+        },
+      ],
+    })
+  );
+
+  if ((response.FailedEntryCount || 0) > 0) {
+    throw new Error("EventBridge rejected one or more entries.");
+  }
+}
+
+function buildEventArn(params: {
+  appPrefix: string;
+  region: string;
+  orgId: number;
+  accountId: number;
+}) {
+  return `${params.appPrefix}:${params.region}:${params.orgId}:${params.accountId}:events/agreements/accepted`;
 }
 
 function buildHeaders(
@@ -278,6 +249,6 @@ async function rollbackAgreementIfNeeded(
       cache: "no-store",
     });
   } catch {
-    // Best-effort compensation. The original group-membership error is still the primary failure.
+    // Best-effort compensation. The original queueing error is still the primary failure.
   }
 }
