@@ -1,11 +1,11 @@
 {
-  "name": "@structured-growth/sg-partnerships-contracts-app",
+  "name": "@structured-growth/sg-esign-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3002",
     "build": "next build",
-    "build-docker": "docker build --build-arg github_token=$GITHUB_TOKEN --platform linux/amd64 -t structured-growth/sg-partnerships-contracts-app:latest .",
+    "build-docker": "docker build --build-arg github_token=$GITHUB_TOKEN --platform linux/amd64 -t structured-growth/sg-esign-app:latest .",
     "start": "next start -p 3002",
     "lint": "next lint"
   },
@@ -13,6 +13,7 @@
     "node": "~20"
   },
   "dependencies": {
+    "@aws-sdk/client-eventbridge": "^3.936.0",
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
