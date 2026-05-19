@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
+import {
+  EventBridgeClient,
+  PutEventsCommand,
+} from "@aws-sdk/client-eventbridge";
 import { CreateAgreementRequestInterface } from "@/core/interfaces/legal.interface";
 import { resolveRequestUser } from "@/core/server/request-user";
 import { getOAuthServiceAccessToken } from "@/core/server/oauth-service-token";
