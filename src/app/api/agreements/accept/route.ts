@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  DescribeEventBusCommand,
   EventBridgeClient,
   PutEventsCommand,
 } from "@aws-sdk/client-eventbridge";
 import { CreateAgreementRequestInterface } from "@/core/interfaces/legal.interface";
 import { resolveRequestUser } from "@/core/server/request-user";
 import { getOAuthServiceAccessToken } from "@/core/server/oauth-service-token";
+
+const verifiedEventBuses = new Set<string>();
 
 export async function POST(request: NextRequest) {
   const user = await resolveRequestUser(request);
@@ -150,6 +153,8 @@ async function enqueueGroupMembershipSync(params: {
 
   const client = new EventBridgeClient({ region });
 
+  await ensureEventBusExists(client, params.eventBusName);
+
   const response = await client.send(
     new PutEventsCommand({
       Entries: [
@@ -177,6 +182,31 @@ async function enqueueGroupMembershipSync(params: {
 
   if ((response.FailedEntryCount || 0) > 0) {
     throw new Error("EventBridge rejected one or more entries.");
+  }
+}
+
+async function ensureEventBusExists(
+  client: EventBridgeClient,
+  eventBusName: string
+) {
+  if (verifiedEventBuses.has(eventBusName)) {
+    return;
+  }
+
+  try {
+    await client.send(
+      new DescribeEventBusCommand({
+        Name: eventBusName,
+      })
+    );
+    verifiedEventBuses.add(eventBusName);
+  } catch (error) {
+    throw new Error(
+      extractErrorMessage(
+        error,
+        `EventBridge bus "${eventBusName}" does not exist or is not accessible.`
+      )
+    );
   }
 }
 
