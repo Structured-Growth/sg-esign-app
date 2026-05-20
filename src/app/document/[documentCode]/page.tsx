@@ -337,7 +337,9 @@ export default function DocumentPage({
               variant="contained"
               disableElevation
               disabled={isAccepted || acceptAgreementState.isLoading}
-              onClick={() => handleAgreement("active", checkAgreementState.data)}
+              onClick={() =>
+                handleAgreement("active", checkAgreementState.data)
+              }
               sx={{
                 alignSelf: { xs: "stretch", sm: "auto" },
                 width: {
