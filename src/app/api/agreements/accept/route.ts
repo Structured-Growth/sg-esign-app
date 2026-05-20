@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  DescribeEventBusCommand,
-  EventBridgeClient,
-  PutEventsCommand,
-} from "@aws-sdk/client-eventbridge";
 import { CreateAgreementRequestInterface } from "@/core/interfaces/legal.interface";
 import { resolveRequestUser } from "@/core/server/request-user";
 import { getOAuthServiceAccessToken } from "@/core/server/oauth-service-token";
 
-const verifiedEventBuses = new Set<string>();
-
 export async function POST(request: NextRequest) {
   const user = await resolveRequestUser(request);
   const legalApiUrl = process.env.NEXT_PUBLIC_LEGAL_API_URL;
-  const eventBusName = process.env.NEXT_EVENTBUS_NAME;
-  const eventSource = process.env.NEXT_APP_PREFIX;
   const acceptLanguage = request.headers.get("accept-language");
 
   if (!user) {
@@ -24,20 +15,6 @@ export async function POST(request: NextRequest) {
   if (!legalApiUrl) {
     return NextResponse.json(
       { error: "NEXT_PUBLIC_LEGAL_API_URL is not configured." },
-      { status: 500 }
-    );
-  }
-
-  if (!eventBusName) {
-    return NextResponse.json(
-      { error: "NEXT_EVENTBUS_NAME is not configured." },
-      { status: 500 }
-    );
-  }
-
-  if (!eventSource) {
-    return NextResponse.json(
-      { error: "NEXT_APP_PREFIX is not configured." },
       { status: 500 }
     );
   }
@@ -63,14 +40,6 @@ export async function POST(request: NextRequest) {
     agreementResponse.status,
     agreementData
   );
-  const createdAgreementId =
-    !alreadySigned &&
-    agreementResponse.ok &&
-    agreementData &&
-    typeof agreementData === "object" &&
-    "id" in agreementData
-      ? Number((agreementData as Record<string, unknown>).id)
-      : null;
 
   if (!agreementResponse.ok && !alreadySigned) {
     return NextResponse.json(
@@ -84,47 +53,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  try {
-    await enqueueGroupMembershipSync({
-      eventBusName,
-      eventSource,
-      region: body.region,
-      orgId: body.orgId,
-      accountId: body.accountId,
-      userId: body.userId,
-      agreementId: createdAgreementId,
-      alreadySigned,
-      language: acceptLanguage,
-    });
-  } catch (error) {
-    await rollbackAgreementIfNeeded(
-      legalApiUrl,
-      authorization,
-      acceptLanguage,
-      createdAgreementId
-    );
-
-    return NextResponse.json(
-      {
-        error: extractErrorMessage(
-          error,
-          "Unable to queue group membership synchronization."
-        ),
-      },
-      { status: 502 }
-    );
-  }
-
   return NextResponse.json(
     {
       agreement: agreementData,
       alreadySigned,
-      queueSubject: buildEventArn({
-        appPrefix: eventSource,
-        region: body.region,
-        orgId: body.orgId,
-        accountId: body.accountId,
-      }),
     },
     {
       headers: {
@@ -132,91 +64,6 @@ export async function POST(request: NextRequest) {
       },
     }
   );
-}
-
-async function enqueueGroupMembershipSync(params: {
-  eventBusName: string;
-  eventSource: string;
-  region: string;
-  orgId: number;
-  accountId: number;
-  userId: number;
-  agreementId: number | null;
-  alreadySigned: boolean;
-  language: string | null;
-}) {
-  const region = process.env.AWS_DEFAULT_REGION;
-
-  if (!region) {
-    throw new Error("AWS region is not configured.");
-  }
-
-  const client = new EventBridgeClient({ region });
-
-  await ensureEventBusExists(client, params.eventBusName);
-
-  const response = await client.send(
-    new PutEventsCommand({
-      Entries: [
-        {
-          EventBusName: params.eventBusName,
-          Source: params.eventSource,
-          DetailType: buildEventArn({
-            appPrefix: params.eventSource,
-            region: params.region,
-            orgId: params.orgId,
-            accountId: params.accountId,
-          }),
-          Detail: JSON.stringify({
-            accountId: params.accountId,
-            userId: params.userId,
-            agreementId: params.agreementId,
-            alreadySigned: params.alreadySigned,
-            language: params.language,
-            requestedAt: new Date().toISOString(),
-          }),
-        },
-      ],
-    })
-  );
-
-  if ((response.FailedEntryCount || 0) > 0) {
-    throw new Error("EventBridge rejected one or more entries.");
-  }
-}
-
-async function ensureEventBusExists(
-  client: EventBridgeClient,
-  eventBusName: string
-) {
-  if (verifiedEventBuses.has(eventBusName)) {
-    return;
-  }
-
-  try {
-    await client.send(
-      new DescribeEventBusCommand({
-        Name: eventBusName,
-      })
-    );
-    verifiedEventBuses.add(eventBusName);
-  } catch (error) {
-    throw new Error(
-      extractErrorMessage(
-        error,
-        `EventBridge bus "${eventBusName}" does not exist or is not accessible.`
-      )
-    );
-  }
-}
-
-function buildEventArn(params: {
-  appPrefix: string;
-  region: string;
-  orgId: number;
-  accountId: number;
-}) {
-  return `${params.appPrefix}:${params.region}:${params.orgId}:${params.accountId}:events/agreements/accepted`;
 }
 
 function buildHeaders(
@@ -263,25 +110,4 @@ function isAlreadySignedError(status: number, data: unknown) {
       (item) => typeof item === "string" && item.includes("already been signed")
     )
   );
-}
-
-async function rollbackAgreementIfNeeded(
-  legalApiUrl: string,
-  authorization: string,
-  acceptLanguage: string | null,
-  agreementId: number | null
-) {
-  if (!agreementId) {
-    return;
-  }
-
-  try {
-    await fetch(`${legalApiUrl}/agreements/${agreementId}`, {
-      method: "DELETE",
-      headers: buildHeaders(authorization, acceptLanguage, false),
-      cache: "no-store",
-    });
-  } catch {
-    // Best-effort compensation. The original queueing error is still the primary failure.
-  }
 }

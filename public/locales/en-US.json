@@ -11,9 +11,14 @@
     "description": "Open this application through a document link from the mobile app or auth flow.",
     "routeLabel": "Expected route:"
   },
+  "notFound": {
+    "title": "404 - document not found",
+    "description": "The requested document was not found."
+  },
   "document": {
     "signedTitle": "Document signed successfully",
     "signedDescription": "Your agreement has been recorded in the legal service.",
+    "acceptedButton": "You already accepted the document",
     "declinedTitle": "Document declined",
     "declinedDescription": "Your decision has been recorded in the legal service.",
     "loading": "Loading document...",
