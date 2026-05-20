@@ -56,5 +56,4 @@ export interface CreateAgreementRequestInterface {
 export interface AcceptAgreementResponseInterface {
   agreement: AgreementInterface | null;
   alreadySigned: boolean;
-  groupIds: number[];
 }

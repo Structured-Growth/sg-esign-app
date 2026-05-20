@@ -11,9 +11,14 @@
     "description": "Abra esta aplicação através de uma ligação do documento a partir da aplicação móvel ou do fluxo de autenticação.",
     "routeLabel": "Rota esperada:"
   },
+  "notFound": {
+    "title": "404 - documento nao encontrado",
+    "description": "O documento solicitado nao foi encontrado."
+  },
   "document": {
     "signedTitle": "Documento assinado com sucesso",
     "signedDescription": "O seu acordo foi registado no serviço legal.",
+    "acceptedButton": "Voce ja aceitou o documento",
     "declinedTitle": "Documento recusado",
     "declinedDescription": "A sua decisão foi registada no serviço legal.",
     "loading": "A carregar documento...",
